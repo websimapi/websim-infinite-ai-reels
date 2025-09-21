@@ -73,20 +73,15 @@ const fetchFallbackProject = async () => {
 
 const generateReelConcept = async (project) => {
   const username = project.user?.username || project.created_by?.username || (await websim.getCreator())?.username || 'creator';
-  const completion = await websim.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: `You create short, punchy reel concepts. Respond with JSON only:
+  try {
+    const completion = await websim.chatCompletion({
+      messages: [
+        { role: "system", content: [{ type: "text", text: `You create short, punchy reel concepts. Respond with JSON only:
 {
   "title": "Max 3 words",
   "script": ["2-3 short lines, max 8 words each"],
   "callToAction": "Short CTA",
-  "visualStyle": {
-    "backgroundColor": "#000000",
-    "textColor": "#FFFFFF",
-    "fontFamily": "Noto Sans"
-  },
+  "visualStyle": { "backgroundColor": "#000000","textColor": "#FFFFFF","fontFamily": "Noto Sans" },
   "projectInfo": {
     "id": "${project.id}",
     "title": "${project.title || ''}",
@@ -94,21 +89,36 @@ const generateReelConcept = async (project) => {
     "imageUrl": "https://images.websim.com/v1/site/${project.id}/600",
     "creatorAvatarUrl": "https://images.websim.com/avatar/${username}"
   }
-}`
-      },
-      { role: "user", content: `Project Title: ${project.title || ''}\nProject Description: ${project.description || ''}\nCreator: @${username}` }
-    ],
-    json: true,
-  });
-  const parsed = JSON.parse(completion.content);
-  return { ...parsed, key: project.id + '-' + Date.now() };
+}` }] },
+        { role: "user", content: [{ type: "text", text: `Project Title: ${project.title || ''}\nProject Description: ${project.description || ''}\nCreator: @${username}` }] }
+      ],
+      json: true,
+    });
+    const parsed = JSON.parse(completion.content);
+    return { ...parsed, key: project.id + '-' + Date.now() };
+  } catch {
+    return {
+      key: project.id + '-' + Date.now(),
+      title: (project.title || 'Featured').slice(0, 18),
+      script: ["Check this out.", "Trending on Websim."],
+      callToAction: "Open project",
+      visualStyle: { backgroundColor: "#000000", textColor: "#FFFFFF", fontFamily: "Noto Sans" },
+      projectInfo: {
+        id: project.id,
+        title: project.title || 'Untitled Project',
+        creator: username,
+        imageUrl: `https://images.websim.com/v1/site/${project.id}/600`,
+        creatorAvatarUrl: `https://images.websim.com/avatar/${username}`
+      }
+    };
+  }
 };
 
 const generateVoiceOver = async (lines = []) => {
   try {
     const text = lines.join('. ');
     if (!text.trim()) return null;
-    const { url } = await websim.textToSpeech({ text, voice: "en-female" });
+    const { url } = await websim.generateTextToSpeech({ text, voice: "en-female" });
     return url || null;
   } catch {
     return null;
