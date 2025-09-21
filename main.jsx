@@ -7,47 +7,60 @@ const fetchTrendingProjects = async () => {
   try {
     const response = await fetch("/api/v1/projects/trending");
     if (!response.ok) {
-      throw new Error(`Failed to fetch trending projects: ${response.statusText}`);
+      console.warn(`Trending projects API failed with status ${response.status}, falling back.`);
+      return null;
     }
     const data = await response.json();
     return data.sites.data;
   } catch (error) {
     console.error("API Error fetching trending projects:", error);
-    const project = await websim.getCurrentProject();
-    const creator = await websim.getCreator();
-    if (project && creator) {
-      return [{ ...project, user: creator }];
-    }
-    return [];
+    return null;
   }
+};
+const fetchFallbackProject = async () => {
+  const project = await websim.getCurrentProject();
+  const creator = await websim.getCreator();
+  if (project && creator) {
+    return [{ ...project, user: creator }];
+  }
+  return [];
 };
 const App = () => {
   const [reels, setReels] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [trendingProjects, setTrendingProjects] = useState([]);
   const [usedProjects, setUsedProjects] = useState(/* @__PURE__ */ new Set());
   const observer = useRef();
   useEffect(() => {
-    const loadTrending = async () => {
+    const loadInitialProjects = async () => {
       setIsLoading(true);
       try {
-        const projects = await fetchTrendingProjects();
-        setTrendingProjects(projects);
+        let projects = await fetchTrendingProjects();
+        if (!projects || projects.length === 0) {
+          console.log("No trending projects found, fetching fallback project.");
+          projects = await fetchFallbackProject();
+        }
         if (projects.length > 0) {
-          addNewReel(projects, /* @__PURE__ */ new Set());
+          setTrendingProjects(projects);
+          await addNewReel(projects, /* @__PURE__ */ new Set());
         } else {
           setError("No projects found to generate reels.");
         }
       } catch (err) {
         setError(err.message);
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    loadTrending();
+    loadInitialProjects();
   }, []);
   const generateReelConcept = async (project) => {
+    if (!project || !project.user) {
+      console.error("Invalid project data provided to generateReelConcept", project);
+      throw new Error("Invalid project data.");
+    }
     const completion = await websim.chat.completions.create({
       messages: [
         {
@@ -94,16 +107,20 @@ Creator: @${project.user.username}`
   };
   const addNewReel = useCallback(async (projects, currentUsed) => {
     if (isLoading || projects.length === 0) return;
-    let availableProjects = projects.filter((p) => !currentUsed.has(p.id));
-    if (availableProjects.length === 0) {
-      availableProjects = projects;
-      currentUsed = /* @__PURE__ */ new Set();
-    }
-    const randomIndex = Math.floor(Math.random() * availableProjects.length);
-    const project = availableProjects[randomIndex];
     setIsLoading(true);
     setError(null);
     try {
+      let availableProjects = projects.filter((p) => !currentUsed.has(p.id));
+      if (availableProjects.length === 0) {
+        console.log("All trending projects used, starting over.");
+        availableProjects = projects;
+        currentUsed = /* @__PURE__ */ new Set();
+      }
+      const randomIndex = Math.floor(Math.random() * availableProjects.length);
+      const project = availableProjects[randomIndex];
+      if (!project) {
+        throw new Error("No project selected to generate reel.");
+      }
       const newReelConcept = await generateReelConcept(project);
       setReels((prevReels) => [...prevReels, newReelConcept]);
       const newUsed = new Set(currentUsed).add(project.id);
@@ -129,17 +146,17 @@ Creator: @${project.user.username}`
     /* @__PURE__ */ jsxDEV("div", { className: "header", children: [
       /* @__PURE__ */ jsxDEV("h1", { children: "Infinite AI Reels" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 143,
+        lineNumber: 163,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("p", { children: "AI-generated short videos based on trending Websim projects. Scroll down for more!" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 144,
+        lineNumber: 164,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 142,
+      lineNumber: 162,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { className: "reel-container", children: reels.map((reel, index) => {
@@ -162,33 +179,33 @@ Creator: @${project.user.username}`
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 151,
+          lineNumber: 171,
           columnNumber: 29
         }
       ) }, reel.key, false, {
         fileName: "<stdin>",
-        lineNumber: 150,
+        lineNumber: 170,
         columnNumber: 25
       });
     }) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 146,
+      lineNumber: 166,
       columnNumber: 13
     }),
     isLoading && /* @__PURE__ */ jsxDEV("div", { className: "loader-container", children: [
       /* @__PURE__ */ jsxDEV("div", { className: "spinner" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 170,
+        lineNumber: 190,
         columnNumber: 21
       }),
       /* @__PURE__ */ jsxDEV("p", { className: "loading-text", children: "Generating next reel..." }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 171,
+        lineNumber: 191,
         columnNumber: 21
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 169,
+      lineNumber: 189,
       columnNumber: 17
     }),
     error && /* @__PURE__ */ jsxDEV("p", { style: { color: "red" }, children: [
@@ -196,18 +213,18 @@ Creator: @${project.user.username}`
       error
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 175,
+      lineNumber: 195,
       columnNumber: 23
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 141,
+    lineNumber: 161,
     columnNumber: 9
   });
 };
 const root = createRoot(document.getElementById("root"));
 root.render(/* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
   fileName: "<stdin>",
-  lineNumber: 181,
+  lineNumber: 201,
   columnNumber: 13
 }));
