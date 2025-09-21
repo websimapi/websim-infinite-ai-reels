@@ -52,12 +52,12 @@ const setError = (msg) => {
 
 const fetchTrendingProjects = async () => {
   try {
-    const res = await fetch('/api/v1/projects/trending');
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.sites?.data || null;
+    const { body } = await websim.fetchApi({ url: '/api/v1/sites/trending?limit=20', options: { method: 'GET' } });
+    const text = await new Response(body).text();
+    const data = JSON.parse(text);
+    return data?.sites?.data || [];
   } catch {
-    return null;
+    return [];
   }
 };
 
@@ -72,6 +72,7 @@ const fetchFallbackProject = async () => {
 };
 
 const generateReelConcept = async (project) => {
+  const username = project.user?.username || project.created_by?.username || (await websim.getCreator())?.username || 'creator';
   const completion = await websim.chat.completions.create({
     messages: [
       {
@@ -87,22 +88,31 @@ const generateReelConcept = async (project) => {
     "fontFamily": "Noto Sans"
   },
   "projectInfo": {
-    "title": "${project.title}",
-    "creator": "${project.user.username}",
+    "id": "${project.id}",
+    "title": "${project.title || ''}",
+    "creator": "${username}",
     "imageUrl": "https://images.websim.com/v1/site/${project.id}/600",
-    "creatorAvatarUrl": "https://images.websim.com/avatar/${project.user.username}"
+    "creatorAvatarUrl": "https://images.websim.com/avatar/${username}"
   }
 }`
       },
-      {
-        role: "user",
-        content: `Project Title: ${project.title}\\nProject Description: ${project.description}\\nCreator: @${project.user.username}`
-      }
+      { role: "user", content: `Project Title: ${project.title || ''}\nProject Description: ${project.description || ''}\nCreator: @${username}` }
     ],
     json: true,
   });
   const parsed = JSON.parse(completion.content);
-  return { ...parsed, key: project.id + Math.random() };
+  return { ...parsed, key: project.id + '-' + Date.now() };
+};
+
+const generateVoiceOver = async (lines = []) => {
+  try {
+    const text = lines.join('. ');
+    if (!text.trim()) return null;
+    const { url } = await websim.textToSpeech({ text, voice: "en-female" });
+    return url || null;
+  } catch {
+    return null;
+  }
 };
 
 const createReelElement = (reel) => {
@@ -167,17 +177,19 @@ const createReelElement = (reel) => {
   ]);
 
   const audio = el('audio', { src: '/uplifting_music.mp3', loop: true });
-  audio.volume = 0.5;
-  // Autoplay with sound may be blocked; start muted and allow tap to unmute.
+  audio.volume = 0.25;
   audio.muted = true;
-  audio.play().catch(() => { /* ignore autoplay rejection */ });
+  audio.play().catch(() => {});
+  const vo = reel.voiceUrl ? el('audio', { src: reel.voiceUrl }) : null;
+  if (vo) { vo.volume = 1.0; vo.muted = true; vo.play().catch(() => {}); }
 
   const unmute = el('button', { style: {
     position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,.6)', color: '#fff',
     border: '1px solid #444', borderRadius: '16px', padding: '6px 10px', fontSize: '12px'
   }, onclick: async () => {
     audio.muted = false;
-    try { await audio.play(); } catch {}
+    if (vo) vo.muted = false;
+    try { await audio.play(); if (vo) await vo.play(); } catch {}
   }}, 'Unmute');
 
   stage.appendChild(title);
@@ -188,6 +200,7 @@ const createReelElement = (reel) => {
   wrapper.appendChild(stage);
   wrapper.appendChild(creatorBar);
   wrapper.appendChild(audio);
+  if (vo) wrapper.appendChild(vo);
   wrapper.appendChild(unmute);
 
   // Staggered reveals
@@ -201,7 +214,7 @@ const createReelElement = (reel) => {
   // Click-through to the project (open in new tab)
   wrapper.addEventListener('click', (e) => {
     if (e.target === unmute) return;
-    const url = `/site/${encodeURIComponent(reel.projectInfo.title)}`; // Fallback; platform may map differently
+    const url = `https://websim.com/c/${encodeURIComponent(reel.projectInfo.id)}`;
     window.open(url, '_blank');
   });
 
@@ -214,12 +227,10 @@ const addNewReel = async () => {
   setError(null);
   try {
     let available = state.trendingProjects.filter(p => !state.used.has(p.id));
-    if (available.length === 0) {
-      available = state.trendingProjects;
-      state.used.clear();
-    }
+    if (available.length === 0) { available = state.trendingProjects; state.used.clear(); }
     const project = available[Math.floor(Math.random() * available.length)];
     const concept = await generateReelConcept(project);
+    concept.voiceUrl = await generateVoiceOver(concept.script || []);
     state.reels.push(concept);
     state.used.add(project.id);
     const node = createReelElement(concept);
