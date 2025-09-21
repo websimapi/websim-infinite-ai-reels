@@ -11,8 +11,8 @@ import {
   spring,
   Sequence
 } from "remotion";
-import { fade } from "@remotion/transitions/fade";
 import {
+  fade,
   linearTiming,
   TransitionSeries
 } from "@remotion/transitions";
