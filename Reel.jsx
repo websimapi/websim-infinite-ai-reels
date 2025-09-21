@@ -88,7 +88,7 @@ const ReelComposition = ({ title, script, visualStyle, music }) => {
       /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 30 }, void 0, false, {
         fileName: "<stdin>",
         lineNumber: 80,
-        columnNumber: 18
+        columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
