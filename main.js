@@ -1,5 +1,3 @@
-
-```javascript
 const root = document.getElementById('root');
 
 const state = {
