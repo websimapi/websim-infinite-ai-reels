@@ -6,23 +6,40 @@ import {
   useCurrentFrame,
   useVideoConfig,
   Series,
-  Audio
+  Audio,
+  Img,
+  spring,
+  Sequence
 } from "remotion";
+import { fade } from "@remotion/transitions/fade";
+import {
+  linearTiming,
+  TransitionSeries
+} from "@remotion/transitions";
 const Title = ({ text, textColor, fontFamily }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
-  const scale = interpolate(frame, [0, 10], [1.2, 1], { extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();
+  const scale = spring({
+    fps,
+    frame,
+    config: {
+      damping: 100,
+      stiffness: 200
+    }
+  });
+  const opacity = interpolate(frame, [0, 20], [0, 1]);
   return /* @__PURE__ */ jsxDEV("h1", { style: {
     fontFamily,
     color: textColor,
-    fontSize: "120px",
+    fontSize: "140px",
+    fontWeight: "bold",
     textAlign: "center",
     margin: "0 40px",
     opacity,
     transform: `scale(${scale})`
   }, children: text }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 17,
+    lineNumber: 35,
     columnNumber: 9
   });
 };
@@ -38,61 +55,210 @@ const ScriptLine = ({ text, textColor, fontFamily }) => {
   return /* @__PURE__ */ jsxDEV("p", { style: {
     fontFamily,
     color: textColor,
-    fontSize: "80px",
+    fontSize: "90px",
     textAlign: "center",
     margin: "0 60px",
     opacity,
     transform: `translateY(${translateY}px)`
   }, children: text }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 43,
+    lineNumber: 62,
     columnNumber: 9
   });
 };
-const ReelComposition = ({ title, script, visualStyle, music }) => {
+const ProjectShowcase = ({ projectInfo }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const scale = spring({
+    fps,
+    frame,
+    from: 0.9,
+    to: 1,
+    config: { stiffness: 100 }
+  });
+  const opacity = interpolate(frame, [0, 20], [0, 1]);
+  return /* @__PURE__ */ jsxDEV("div", { style: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "30px",
+    opacity,
+    transform: `scale(${scale})`
+  }, children: [
+    /* @__PURE__ */ jsxDEV(
+      Img,
+      {
+        src: projectInfo.imageUrl,
+        style: {
+          width: "80%",
+          borderRadius: "20px",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
+        }
+      },
+      void 0,
+      false,
+      {
+        fileName: "<stdin>",
+        lineNumber: 100,
+        columnNumber: 13
+      }
+    ),
+    /* @__PURE__ */ jsxDEV("h2", { style: {
+      fontSize: "70px",
+      color: "#fff",
+      textAlign: "center",
+      backgroundColor: "rgba(0,0,0,0.6)",
+      padding: "10px 30px",
+      borderRadius: "15px",
+      maxWidth: "90%"
+    }, children: projectInfo.title }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 108,
+      columnNumber: 14
+    })
+  ] }, void 0, true, {
+    fileName: "<stdin>",
+    lineNumber: 91,
+    columnNumber: 9
+  });
+};
+const CreatorInfo = ({ projectInfo, textColor }) => {
+  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { top: "auto", bottom: 120, height: "auto" }, children: /* @__PURE__ */ jsxDEV("div", { style: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "20px",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: "15px",
+    borderRadius: "50px",
+    margin: "0 auto",
+    maxWidth: "fit-content"
+  }, children: [
+    /* @__PURE__ */ jsxDEV(Img, { src: projectInfo.creatorAvatarUrl, style: { width: 60, height: 60, borderRadius: "50%" } }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 137,
+      columnNumber: 17
+    }),
+    /* @__PURE__ */ jsxDEV("span", { style: { fontSize: "50px", color: textColor, fontWeight: "bold" }, children: [
+      "@",
+      projectInfo.creator
+    ] }, void 0, true, {
+      fileName: "<stdin>",
+      lineNumber: 138,
+      columnNumber: 17
+    })
+  ] }, void 0, true, {
+    fileName: "<stdin>",
+    lineNumber: 126,
+    columnNumber: 13
+  }) }, void 0, false, {
+    fileName: "<stdin>",
+    lineNumber: 125,
+    columnNumber: 9
+  });
+};
+const ReelComposition = ({ title, script, callToAction, visualStyle, projectInfo }) => {
   const { backgroundColor, textColor, fontFamily } = visualStyle;
-  const musicUrl = "uplifting_music.mp3";
-  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor, justifyContent: "center", alignItems: "center" }, children: [
+  const musicUrl = "/uplifting_music.mp3";
+  const DURATION = 60;
+  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor }, children: [
     /* @__PURE__ */ jsxDEV(Audio, { src: musicUrl, loop: true, volume: 0.5 }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 66,
+      lineNumber: 154,
       columnNumber: 13
     }),
-    /* @__PURE__ */ jsxDEV(Series, { children: [
-      /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 80, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(Title, { text: title, textColor, fontFamily }, void 0, false, {
+    /* @__PURE__ */ jsxDEV(TransitionSeries, { children: [
+      /* @__PURE__ */ jsxDEV(TransitionSeries.Sequence, { durationInFrames: DURATION, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(Title, { text: title, textColor, fontFamily }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 70,
+        lineNumber: 158,
         columnNumber: 25
       }) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 69,
+        lineNumber: 157,
         columnNumber: 21
       }) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 68,
+        lineNumber: 156,
         columnNumber: 17
       }),
-      script.map((line, index) => /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 60, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(ScriptLine, { text: line, textColor, fontFamily }, void 0, false, {
+      /* @__PURE__ */ jsxDEV(TransitionSeries.Transition, { timing: linearTiming({ durationInFrames: 15 }), presentation: fade() }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 76,
-        columnNumber: 29
+        lineNumber: 162,
+        columnNumber: 17
+      }),
+      script.map((line, index) => /* @__PURE__ */ jsxDEV(React.Fragment, { children: [
+        /* @__PURE__ */ jsxDEV(TransitionSeries.Sequence, { durationInFrames: DURATION, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(ScriptLine, { text: line, textColor, fontFamily }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 168,
+          columnNumber: 33
+        }) }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 167,
+          columnNumber: 29
+        }) }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 166,
+          columnNumber: 25
+        }),
+        /* @__PURE__ */ jsxDEV(TransitionSeries.Transition, { timing: linearTiming({ durationInFrames: 15 }), presentation: fade() }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 171,
+          columnNumber: 25
+        })
+      ] }, index, true, {
+        fileName: "<stdin>",
+        lineNumber: 165,
+        columnNumber: 21
+      })),
+      /* @__PURE__ */ jsxDEV(TransitionSeries.Sequence, { durationInFrames: DURATION * 2, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(ProjectShowcase, { projectInfo }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 177,
+        columnNumber: 25
       }) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 75,
-        columnNumber: 26
-      }) }, index, false, {
+        lineNumber: 176,
+        columnNumber: 22
+      }) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 74,
+        lineNumber: 175,
+        columnNumber: 17
+      }),
+      /* @__PURE__ */ jsxDEV(TransitionSeries.Transition, { timing: linearTiming({ durationInFrames: 15 }), presentation: fade() }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 180,
+        columnNumber: 18
+      }),
+      /* @__PURE__ */ jsxDEV(TransitionSeries.Sequence, { durationInFrames: DURATION, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(Title, { text: callToAction, textColor, fontFamily }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 184,
+        columnNumber: 25
+      }) }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 183,
         columnNumber: 21
-      }))
+      }) }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 182,
+        columnNumber: 17
+      })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 67,
+      lineNumber: 155,
+      columnNumber: 13
+    }),
+    /* @__PURE__ */ jsxDEV(Sequence, { from: 360 - DURATION - 15, children: /* @__PURE__ */ jsxDEV(CreatorInfo, { projectInfo, textColor }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 189,
+      columnNumber: 18
+    }) }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 188,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 65,
+    lineNumber: 153,
     columnNumber: 9
   });
 };
