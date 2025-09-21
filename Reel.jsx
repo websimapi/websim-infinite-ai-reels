@@ -59,7 +59,7 @@ const ReelComposition = ({ title, script, visualStyle, music }) => {
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(Series, { children: [
-      /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 90, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(Title, { text: title, textColor, fontFamily }, void 0, false, {
+      /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 80, children: /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "center", alignItems: "center" }, children: /* @__PURE__ */ jsxDEV(Title, { text: title, textColor, fontFamily }, void 0, false, {
         fileName: "<stdin>",
         lineNumber: 70,
         columnNumber: 25
@@ -84,12 +84,7 @@ const ReelComposition = ({ title, script, visualStyle, music }) => {
         fileName: "<stdin>",
         lineNumber: 74,
         columnNumber: 21
-      })),
-      /* @__PURE__ */ jsxDEV(Series.Sequence, { durationInFrames: 30 }, void 0, false, {
-        fileName: "<stdin>",
-        lineNumber: 80,
-        columnNumber: 17
-      })
+      }))
     ] }, void 0, true, {
       fileName: "<stdin>",
       lineNumber: 67,
